@@ -1,0 +1,37 @@
+---
+- name: Create Jira Ticket
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    jira_base_url: "https://your-jira-instance.com"
+    jira_username: "your-jira-username"
+    jira_password: "your-jira-password"
+    jira_project_key: "PROJECT"
+
+  tasks:
+    - name: Generate Jira Ticket JSON Payload
+      template:
+        src: ticket.json.j2
+        dest: ticket.json
+
+    - name: Read Jira Ticket JSON Payload
+      slurp:
+        src: ticket.json
+      register: ticket_json
+
+    - name: Create Jira Ticket
+      uri:
+        url: "{{ jira_base_url }}/rest/api/2/issue/"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+        body: "{{ ticket_json['content'] | b64decode }}"
+        validate_certs: no
+        user: "{{ jira_username }}"
+        password: "{{ jira_password }}"
+      register: create_response
+
+    - name: Display Jira Ticket Key
+      debug:
+        msg: "Jira Ticket created with key {{ create_response.json.key }}"
